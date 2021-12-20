@@ -1,0 +1,118 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+
+struct student
+{
+	std::string surname;
+	std::string name;
+	double mark;
+	student() :mark(0), name(" "), surname(" ") {}
+	void clear() { mark = 0; name = " "; surname = " "; }
+};
+
+struct Sort
+{
+
+	bool operator()(student a, student b)
+	{
+		return a.mark > b.mark;
+	}
+}sort_mark;
+
+std::ostream& operator<<(std::ostream& out,const student& s)
+{
+	return out << s.surname << " " << s.name << " " << s.mark;
+}
+bool operator>=(std::string& str,student s)
+{
+	return str.length() >= s.surname.length();
+}
+
+void print(const std::vector<student>& students)
+//vector output
+{
+	for (auto& element : students)
+	{
+		std::cout << element << std::endl;
+	}
+	std::cout << "////////////////////////////////////////////////" << std::endl;
+}
+
+void append(student& s,const std::string& path)
+//add new person in file
+{
+	std::ofstream ofile(path, std::ofstream::app);
+	ofile << "\n" << s;
+}
+
+void read(std::vector<student>& students,const std::string path)
+//contain of file push into vector
+{
+	student s;
+	std::ifstream ifile(path);
+	if (!ifile.is_open())
+	{
+		std::cout << "coudn't open file";
+		exit(1);
+	}
+	students.clear();
+	while (ifile >> s.surname >> s.name >> s.mark)
+	{
+		students.push_back(s);
+	}
+}
+void input(student& s)
+//input information about new person
+{
+	std::cout << "surname:" << std::endl;
+	std::cin >> s.surname;
+	std::cout << "\nname:" << std::endl;
+	std::cin >> s.name;
+	std::cout << "\nmark:" << std::endl;
+	std::cin >> s.mark;
+}
+
+int main()
+{
+	
+	student s;
+	std::vector <student> students;
+	read(students, "student.txt");
+	std::sort(students.begin(), students.end(), sort_mark);
+
+	print(students);
+	input(s);
+	students.push_back(s);
+	append(s,"student.txt");
+	print(students);
+
+	for (int i = 0;i < students.size();++i)
+	{
+		if ((int)students[i].name[0] == (int)"A"[0])
+		{
+			s.name = students[i].name;
+			s.surname = students[i].surname;
+			s.mark = students[i].mark;
+			append(s, "new_file.txt");
+		}
+			
+	}
+	read(students, "new_file.txt");
+	print(students);
+
+	s.clear();
+	for (int i = 0;i<students.size();++i)
+	{
+		if (students[i].surname >= s)
+		{
+			s.name = students[i].name;
+			s.surname = students[i].surname;
+			s.mark = students[i].mark;
+		}
+		
+	}
+	std::cout << s << std::endl;
+
+}

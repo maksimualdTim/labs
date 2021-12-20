@@ -1,0 +1,336 @@
+
+#include <iostream>
+using  std::cout;
+using std::cin;
+using std::endl;
+
+
+struct list_node_t {
+private:
+	double value;
+public:
+	list_node_t* next;
+	double& Value() { return value; };
+};
+
+class list_t {
+
+public:
+	list_t() {
+		init();
+	}
+	list_t(double elem, int n) {
+
+		head = tail = nullptr;
+		length = 0;
+
+		while (n-- > 0) {
+			append(elem);
+		}
+	}
+
+	  list_t& operator=(list_t&& from)
+	{
+		cout << "move=" << endl;
+		clear();
+		head = from.head;
+		tail = from.tail;
+		length = from.length;
+		from.head = nullptr;
+		from.tail = nullptr;
+		from.length = 0;
+		return *this;
+
+	}
+
+
+	list_t(const list_t& from) {
+		cout << "Copy ctor" << endl;
+		init();
+		list_node_t* current = from.head;
+			while (current) {
+				this->append(current->Value());
+				current = current->next;
+			}
+		
+	}
+
+	void clone(const list_t& from)
+	{
+		init();
+
+		list_node_t* cur = from.head;
+
+		while (cur)
+		{
+			append( cur->Value());
+			cur = cur->next;
+		}
+	}
+
+	list_t( list_t&& from)
+	{
+		cout << "ctor move" << endl;
+		head = from.head;
+		tail = from.tail;
+		length = from.length;
+		from.head = nullptr;
+		from.tail = nullptr;
+		from.length = 0;
+	}
+	
+
+	/////////////////////////////////////////////////////////////////////
+	
+	 list_t& operator = (const list_t& from)
+	 {
+		 init();
+		cout << "op= " << endl;
+		if (&from != this) copy(from, *this);
+		return *this;
+	}
+
+	///////////////////////////////////////////////////
+
+	~list_t() {
+		cout << "Delete " << endl;
+		print();
+		clear();
+		cout << "Empty " << endl;
+		print();
+	}
+	list_t& prepend1(double elem)
+	{
+		prepend(elem);
+		return *this;
+	}
+	int find(double a)
+	{
+		int i = 0;
+		list_node_t* cur = head;
+		while ((cur->Value() != a) && (cur->next != nullptr))
+		{
+			cur = cur->next;
+			i++;
+		}
+		if ((cur->Value() != a) && (cur->next == nullptr))
+		{
+			return -1;
+		}
+		else return i;
+	}
+	void insert(double elem, int n) {
+		list_node_t* cur = new list_node_t;///cur=add
+		cur->Value() = elem;
+		cur->next = NULL;/////
+		length++;
+
+		if (0 == n) {
+			if (head == NULL)
+				//list.tail = cur;
+				cur->next = head;
+			head = cur;
+		}
+		else {
+			list_node_t* tmp = head;//временный указатель должен найти место вставки начиная с головы
+
+			while (tmp->next != NULL && --n != 0) {        
+				tmp = tmp->next;
+			}
+			if (tmp->next == NULL)
+				tail = cur;
+
+			cur->next = tmp->next;
+			tmp->next = cur;
+		}
+
+	}
+
+
+	
+	class Iterator {
+		friend class list_t;
+	private:
+		const list_t* col;
+		list_node_t* node;
+	public:
+		Iterator() : col(nullptr), node(nullptr) {} 
+		Iterator(const list_t* list, list_node_t* list_node) : col(list), node(list_node) {} //constructor
+
+		bool operator != (const Iterator& lhs) const {
+			return this->node != lhs.node && this->col == lhs.col;
+		}
+		Iterator& operator++ () {
+			if (node != nullptr) {
+				node = node->next;
+			}
+			else {
+				node = nullptr;
+			}
+			return *this;
+		}
+		double& operator * () {
+			return node->Value();
+					}
+
+			};
+public:
+	Iterator begin() {
+		return Iterator(this, head);
+	}
+	Iterator end() {
+		return Iterator(this, nullptr);
+	}
+
+private:
+	list_node_t* head;
+	list_node_t* tail;
+	int length;
+
+	void init() {
+		head = nullptr;
+		tail = nullptr;
+		length = 0;
+	}
+
+public:
+
+	
+	void clear()
+	{
+		list_node_t* cur = head;
+		list_node_t* cur_del = head;
+		while (cur)
+		{
+			cur_del = cur->next;
+			delete cur;
+			cur = cur_del;
+		}
+		init();
+	}
+	void copy(const list_t& from, list_t& to)
+	{
+		clear();
+		clone(from);
+	}
+	void append(double elem)
+	{
+		length++;
+		list_node_t* cur = new list_node_t;
+		cur->Value() = elem;
+		cur->next = NULL;
+		if (head)
+		{
+			tail->next = cur;
+			tail = cur;
+			length++;
+
+		}
+		else {
+			head = cur;
+			tail = cur;
+			length = 1;
+		}
+	}
+
+	
+	void prepend(double elem)
+	{
+		length++;
+		list_node_t* add = new list_node_t;
+		add->Value() = elem;
+		add->next = head;
+		if (head == nullptr)
+		{
+			tail = add;
+		}
+		else head = add;
+
+	}
+	
+
+	
+	void print()
+	{
+		list_node_t* cur = head;
+		while (cur)
+		{
+			cout << cur->Value() << endl;
+			cur = cur->next;
+		}
+	}
+	
+};
+
+
+int main() {
+	//list_t list;
+	double v;
+	int n;
+	cout << "value=";
+	cin >> v;
+	cout << "number=";
+	cin >> n;
+	list_t list(v, n);
+	list_t list4;
+	list_t list_2;
+	list.print();
+	
+	list.prepend1(10).prepend1(20);
+	list4 = list;
+	list_2 = list;
+	cout << "print   list4 " << endl;
+	list4.print();
+
+	
+	char com = ' ';
+	while (com != 'e')
+	{
+		cout << "command:";
+		cin >> com;
+		switch (com)
+		{
+		case 'a':cout << "value=";
+			cin >> v;
+			list.append(v);
+			break;
+
+		case 'i':cout << "value=";
+			cin >> v;
+			cout << "number:";
+			cin >> n;
+			list.insert(v, n);
+			break;
+		case 'p':list.print();
+			break;
+
+		case 'c':
+			list.clear();
+			break;
+		case 'b':cout << "value=";
+			cin >> v;
+			list.prepend(v);
+			break;
+
+		case 'f':cout << "number=";
+			cin >> v;
+			cout << "position " << list.find(v) << endl;;
+			break;
+		}
+	}
+
+
+	for (list_t::Iterator it = list.begin(); it != list.end(); ++it) {
+				cout << *it << endl;
+	}
+		return 0;
+}
+	
+
+
+
+	return 0;
+}
+
+	return 0;
+}

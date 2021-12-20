@@ -1,0 +1,80 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+
+struct gun_state 
+{
+	double x;
+	double angle;
+
+	gun_state(int x, int y) :x(x), angle(y) {};
+};
+
+struct gun_command 
+{
+	virtual void com(double& x_gun, double& angle_gun) = 0;
+};
+
+struct move : public gun_command 
+{
+	double x;
+	move(const double x) : x(x) {}
+	void com(double& x_gun, double& angle_gun) override
+	{
+		x_gun += x;
+	}
+};
+
+struct look_at : public gun_command 
+{
+	double angle;
+	look_at(const double angle) : angle(angle) {}
+	void com(double& x_gun, double& angle_gun) override
+	{
+		angle_gun += angle;
+	}
+};
+
+int main()
+{
+	std::ifstream ifile("commands.txt");
+	std::vector<gun_command*> commands;
+	std::string command;
+	double value;
+
+	if (!ifile.is_open()) 
+	{
+		std::cout << "coudn't open file" << std::endl;
+	}
+	else {
+		while (ifile >> command >> value) 
+		{
+			if (command == "move") 
+				commands.push_back(new move(value));
+
+			if (command == "look_at")
+				commands.push_back(new look_at(value));
+		}
+
+		std::cout << "inter x:" << std::endl;
+		double x;
+		std::cin >> x;
+		std::cout << "inter angle:" << std::endl;
+		double angle;
+		std::cin >> angle;
+
+		gun_state gun(x, angle);
+
+		std::cout << "x = " << gun.x << " angle = " << gun.angle << std::endl;
+
+		for (auto element : commands) 
+		{
+			element->com(gun.x, gun.angle);
+			std::cout << "x = " << gun.x << " angle = " << gun.angle << std::endl;
+		}
+
+
+	}
+	return 0;
+}

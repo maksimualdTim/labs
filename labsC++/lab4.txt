@@ -1,0 +1,260 @@
+#include <iostream>
+
+
+struct list_node_t {
+private:
+    int value;
+public:
+    list_node_t* next;
+    int& Value() { return value; };
+};
+
+class list_t {
+public:
+    list_t() {
+        std::cout << "Default constructor" << std::endl;
+        this->init();
+    }
+
+    list_t(const int& amount, const int& x) {
+        std::cout << "Constructor by value" << std::endl;
+        this->init();
+        for (int i = 0; i < amount; i++) {
+            this->append(x);
+        }
+    }
+
+    list_t(const list_t& from) {
+        std::cout << "Copy ctor" << std::endl;
+        if (from.length != 0) {
+            list_node_t* current = from.head;
+            init();
+            while (current) {
+                this->append(current->Value());
+                current = current->next;
+            }
+        }
+        else init();
+    }
+
+    list_t(list_t&& l) {
+        std::cout << "Move ctor" << std::endl;
+        init();
+        this->head = l.head;
+        this->tail = l.tail;
+        this->length = l.length;
+        l.head = nullptr;
+        l.tail = nullptr;
+        l.length = 0;
+    }
+
+    list_t& operator = (const list_t& from) {
+        std::cout << "operator = " << std::endl;
+        if (&from != this) {
+            if (length == 0) {
+                init();
+            }
+            else {
+                clear();
+                init();
+            }
+            list_node_t* current = from.head;
+            while (current) {
+                append(current->Value());
+                current = current->next;
+            }
+        }
+        return *this;
+    }
+
+    list_t& operator = (list_t&& from) {
+        std::cout << "Move =" << std::endl;
+        if (this != &from) {
+            this->clear();
+            this->head = from.head;
+            this->tail = from.tail;
+            this->length = from.length;
+            from.head = nullptr;
+            from.tail = nullptr;
+            from.length = 0;
+        }
+        return *this;
+    }
+
+
+    ~list_t() {
+        std::cout << "dtor" << std::endl;
+        clear();
+    }
+
+    class Iterator {
+        friend class list_t;
+    private:
+        const list_t* collection;
+        list_node_t* node;
+    public:
+        Iterator() : collection(nullptr), node(nullptr) {} //default constructor
+        Iterator(const list_t* list, list_node_t* list_node) : collection(list), node(list_node) {} //constructor
+
+        bool operator != (const Iterator& lhs) const {
+            return this->node != lhs.node && this->collection == lhs.collection;
+        }
+        Iterator& operator++ () {
+            if (node != nullptr) {
+                node = node->next;
+            }
+            else {
+                node = nullptr;
+            }
+            return *this;
+        }
+        int operator*() {
+            if (node != nullptr) {
+                return node->Value();
+            }
+        }
+
+
+    };
+public:
+    Iterator begin() {
+        return Iterator(this, head);
+    }
+    Iterator end() {
+        return Iterator(this, nullptr);
+    }
+
+private:
+    list_node_t* head;
+    list_node_t* tail;
+    int length;
+
+public:
+
+    void init() {
+        head = nullptr;
+        tail = nullptr;
+        length = 0;
+    }
+
+    void clear() {
+        while (head) {
+            list_node_t* next = head->next;
+            delete head;
+            head = next;
+        }
+        head = nullptr;
+        tail = nullptr;
+        length = 0;
+    }
+
+    void append(const int& x) {
+        list_node_t* current = new list_node_t;
+        current->Value() = x;
+
+        if (length == 0) {
+            head = current;
+        }
+        else {
+            tail->next = current;
+        }
+        current->next = nullptr;
+        tail = current;
+
+        length++;
+    }
+
+    void prepend(const int& x) {
+        list_node_t* current = new list_node_t;
+        current->Value() = x;
+
+        if (length == 0) {
+            head = current;
+            current->next = nullptr;
+            tail = current;
+        }
+        else {
+            current->next = head;
+            head = current;
+        }
+        length++;
+    }
+
+    void insert(const int& position, const int& x) {
+        if (position < 2) {
+            this->prepend(x);
+        }
+        else if (position >= length) {
+            this->append(x);
+        }
+        else if (position < length) {
+            list_node_t* slave = this->head;
+            list_node_t* chief = new list_node_t;
+            chief->Value() = x;
+
+            for (int i = 1; i < position - 1; i++) {
+                slave = slave->next;
+            }
+            chief->next = slave->next;
+            slave->next = chief;
+            length++;
+        }
+    }
+
+    void remove(const int& position) {
+        list_node_t* curr1 = new list_node_t;
+        list_node_t* curr2 = new list_node_t;
+
+        if (position == 1) {
+            curr1 = head;
+            curr2 = curr1->next;
+            delete curr1;
+            head = curr2;
+        }
+        else {
+            curr1 = head;
+            for (int i = 1; i < position - 1; i++) {
+                curr1 = curr1->next;
+            }
+            curr2 = curr1->next;
+            curr1->next = curr2->next;
+            delete curr2;
+        }
+        length--;
+    }
+
+    void print() const {
+        std::cout << std::endl;
+        if (length != 0) {
+            list_node_t* current = this->head;
+            while (current) {
+                std::cout << current->Value() << std::endl;
+                current = current->next;
+            }
+        }
+        else std::cout << "List is empty" << std::endl;
+    }
+
+
+};
+list_t create() {
+    std::cout << "Temporary" << std::endl;
+    list_t l;
+    for (int x = 1; x < 6; x++) {
+        l.append(x * 1000);
+    }
+    return l;
+}
+
+int main() {
+    list_t list;
+    for (int x = 1; x < 4; x++) {
+        list.append(x);
+    }
+
+    for (list_t::Iterator it = list.begin(); it != list.end(); ++it) {
+        std::cout << it.operator*() << std::endl;
+    }
+
+    return 0;
+}

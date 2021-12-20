@@ -1,0 +1,387 @@
+#include <iostream>
+#include <stdexcept>
+#include <cassert>
+#include <cmath>
+
+using namespace std;
+class Iterator;
+
+class vector_t {
+private:
+	double* data;
+	unsigned int length;
+
+public:
+	//def ctor
+	vector_t() {
+		cout << "default ctor" << endl;
+		length = 0;
+		data = nullptr;
+	}
+
+	//ctor num
+	vector_t(int count) {
+		cout << "Ctor num" << endl;
+		data = new double[count];
+		length = count;
+	}
+
+	//ctor num (заполнение списка числами)
+	vector_t(int count, double value) {
+		cout << "ctor num" << endl;
+		data = new double[count];
+		length = count;
+		for (int i = 0; i < length; i++) {
+			data[i] = value;
+		}
+	}
+
+	//конструктор копирования 
+	vector_t(const vector_t& from) {
+		cout << "Copy" << endl;
+		data = new double[from.length];
+		length = from.length;
+		for (int i = 0; i < length; i++) {
+			data[i] = from.data[i];
+		}
+	}
+
+	//конструктор перемещения
+	vector_t(vector_t&& from) {
+		cout << "move ctor" << endl;
+		length = from.length;
+		data = from.data;
+		from.length = 0;
+		from.data = nullptr;
+	}
+
+	//оператор = перемещение
+	vector_t& operator= (vector_t&& from) {
+		cout << "operator move= " << endl;
+		if (this != &from) {
+			clear();
+			length = from.length;
+			data = from.data;
+			from.length = 0;
+			from.data = nullptr;
+		}
+		return *this;
+	}
+
+	//оператор = копирования
+	vector_t& operator= (const vector_t& from) {
+		cout << "operator copy= " << endl;
+		if (this != &from) {
+			copy(from, *this);
+		}
+		return *this;
+	}
+
+	double& operator[] (int position)
+	{
+		return data[position];
+	}  
+
+	double operator[] (int position) const
+	{
+		return data[position];
+	} 
+
+	void print() const {
+		for (int i = 0; i < length; i++) {
+			cout << data[i] << ' ';
+		}
+		cout << ' ' << endl;
+	}
+	void init() { length = 0; data = nullptr; }
+	void clear() { delete[] data; length = 0; data = nullptr; }
+	void copy(const vector_t& from, vector_t& to) {
+		if (from.length != 0) {
+			to.clear();
+			to.data = new double[from.length];
+			to.length = from.length;
+			for (int i = 0; i < from.length; i++) {
+				to.data[i] = from.data[i];
+			}
+		}
+		else return;
+	}
+
+	double& at(int position) const {
+		if ((position >= length) || (position < 0))
+			throw std::out_of_range("not rigth length");
+		return data[position];
+	}
+
+	int size() const { return length; }
+
+	vector_t& resize(int n_count, int value) {
+		vector_t vector(n_count);
+		int g = 0;
+		int dif = n_count - length;
+		if (dif > 0) { dif = length; }
+		else dif = n_count;
+
+		for (int i = 0; i < dif; i++) {
+			vector[i] = data[i];
+			g++;
+		}
+		for (g; g < n_count; g++) {
+			vector[g] = value;
+		}
+		clear();
+		*this = (vector_t&&)vector;
+		return *this;
+	}
+	vector_t& resize(int n_count) {
+		vector_t vector(n_count);
+		int g = 0;
+		int dif = n_count - length;
+		if (dif > 0) { dif = length; }
+		else dif = n_count;
+
+		for (int i = 0; i < dif; i++) {
+			vector[i] = data[i];
+			g++;
+		}
+		for (g; g < n_count; g++) {
+			vector[g] = 0;
+		}
+		clear();
+		*this = (vector_t&&)vector;
+		return *this;
+	}
+
+	~vector_t() { cout << "dctor" << endl; clear(); }
+
+	Iterator begin();
+	Iterator end();
+};
+
+
+class Iterator {
+
+private:
+	double* itdata;        //передвигается по массиву
+public:
+	Iterator() :itdata(nullptr) {}
+
+	Iterator(double* data1) :itdata(data1) {}
+
+	bool operator != (const Iterator& lv) const {
+		return itdata != lv.itdata;
+	}
+
+	double& operator*() {
+		return *itdata;
+	}
+
+	double operator*() const {
+		return *itdata;
+	}
+
+	double* operator++() {
+		return ++itdata;
+	}
+
+	double* operator--() {    //приведение типов (itdata-1) непонятный тип, а double* приводит его
+		return --itdata;
+	}
+};
+
+struct linear_generator_t {
+public:
+	double step;
+	double begin;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	linear_generator_t(double value, double st) {
+		begin = value;
+		step = st;
+	}
+	double operator()() {
+		begin = begin + step * i;
+		++i;
+		return begin;
+	}
+};
+
+struct power_generator_t {
+public:
+	double begin;
+	int power;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	power_generator_t(double value, int p) {
+		begin = value;
+		power = p;
+	}
+	double operator()() {
+		double a = pow(begin, power + i);
+		double z = a;
+		++i;
+		return z;
+	}
+};
+
+struct random_generator_t {
+public:
+	double begin;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	random_generator_t(double value) {
+		begin = value;
+	}
+	double operator()() {
+		begin = rand();
+		return begin;
+	}
+};
+
+Iterator vector_t::begin() { return Iterator(data); }  //последовательность обращения с начала программы
+Iterator vector_t::end() { return Iterator(data + size()); }
+
+//унарный +
+vector_t operator+ (const vector_t& v1) {
+	vector_t v(v1);
+	return v;
+}
+//унарный -
+vector_t operator- (const vector_t& v1) {
+	vector_t v(v1);
+	for (int i = 0; i < v.size(); ++i) {
+		v[i] = (-1) * v[i];
+	}
+	return v;
+}
+
+void operator*(double x, const vector_t& vector) {
+	vector_t operator*(const vector_t & vector, double x);
+}
+
+vector_t operator*(const vector_t& vector, double x) {
+	vector_t mult1(vector);
+	for (int i = 0; i < mult1.size(); ++i) {
+		mult1[i] = x * vector[i];
+	}
+	return mult1;
+}
+
+//бинарный op+
+vector_t operator+ (const vector_t& v1, const vector_t& v2) {
+	assert(v1.size() == v2.size());
+	vector_t sum(v1);
+	for (int i = 0; i < sum.size(); ++i) {
+		sum[i] = v1[i] + v2[i];
+	}
+	return sum;
+}
+
+//бинарный op-
+vector_t operator- (const vector_t& v1, const vector_t& v2) {
+	assert(v1.size() == v2.size());
+	vector_t minus(v1);
+	for (int i = 0; i < minus.size(); ++i) {
+		minus[i] = v1[i] - v2[i];
+	}
+	return minus;
+}
+
+//оптимизация сложения
+vector_t operator+ (const vector_t& v1, vector_t&& v2) {
+	assert(v1.size() == v2.size());
+	for (int i = 0; i < v2.size(); ++i) {
+		v2[i] += v1[i];
+	}
+	return (vector_t&&)v2;
+}
+
+void fill(vector_t& v, double value, int step) {
+	for (int i = 0; i < v.size(); ++i) {
+		v[i] = value + step * i;
+	}
+}
+
+void fill(Iterator it_begin, Iterator it_end, double value, int step) {
+	int i = 0; double val = 0;
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		val = value + step * i;
+		++i;
+		*it_begin = val;
+	}
+}
+
+void fill_step_linear(Iterator it_begin, Iterator it_end, linear_generator_t l) {
+	int i = 0; double val = 0;
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		*it_begin = l();
+	}
+}
+
+void fill_step_power(Iterator it_begin, Iterator it_end, power_generator_t l) {
+	int i = 0; double val = 0;
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		*it_begin = l();
+	}
+}
+
+void fill_step_power(Iterator it_begin, Iterator it_end, double value, int power) {
+	double val; int p = power;
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		val = pow(value, p);
+		++p;
+		*it_begin = val;
+	}
+}
+
+void fill_random(Iterator it_begin, Iterator it_end) {
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		*it_begin = rand();
+	}
+}
+
+void fill_random(Iterator it_begin, Iterator it_end, random_generator_t l) {
+	for (it_begin; it_begin != it_end; ++it_begin) {
+		*it_begin = l();
+	}
+}
+
+int main() {
+	vector_t v1(10);
+	vector_t v2(8);
+
+
+	linear_generator_t linear_generator(3, 4);
+	fill_step_linear(v1.begin(), v1.end(), linear_generator);
+	v1.print();
+
+	fill_step_power(v2.begin(), v2.end(), 2, 0);
+	v2.print();
+
+	power_generator_t power_generator(2, 2);
+	fill_step_power(v2.begin(), v2.end(), power_generator);
+	v2.print();
+
+	fill_random(v2.begin(), v2.end());
+	v2.print();
+
+	vector_t v3(10);
+	random_generator_t random_generator(3);
+	fill_random(v3.begin(), v3.end(), random_generator);
+	v3.print();
+
+	v3.resize(4, 3);
+	v3.print();
+
+	v3.resize(15);
+	v3.print();
+
+	//v3.at(23);
+	v3.at(2);
+
+
+	return 0;
+}

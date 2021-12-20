@@ -1,0 +1,170 @@
+#include <iostream>
+struct list_node_t
+{
+	double value;
+	list_node_t* next;
+};
+
+class list_t
+{
+	list_node_t* head, * tail;
+	unsigned int length;
+public:
+	list_t() :length(0), head(nullptr), tail(nullptr) {}
+
+	list_t(unsigned int size, double val) :list_t()
+	{
+		for (int i = 0;i < size;++i)
+		{
+			Append(val);
+
+		}
+	}
+	list_t& operator=(const list_t& list)
+	{
+		if (this == &list)
+			return*this;
+
+		list_node_t* p = head->next;
+		list_node_t* pleft = head->next;
+		for (int i = 1; i < length - 1; ++i)
+		{
+			p = pleft;
+			pleft = pleft->next;
+			delete p;
+		}
+		delete pleft;
+		pleft = head;
+		list_node_t* pright = list.head;
+		while (pright->next)
+		{
+			pleft->value = pright->value;
+			pright = pright->next;
+			pleft->next = new list_node_t;
+			pleft = pleft->next;
+		}
+		pleft->value = pright->value;
+		tail = pleft;
+		tail->next = nullptr;
+		length = list.length;
+		return*this;
+	}
+	~list_t()
+	{
+		list_node_t* pnode = head;
+		list_node_t* p = head;
+		for (int i = 1; i <= length; ++i)
+		{
+			pnode = p;
+			p = p->next;
+			delete pnode;
+		}
+		std::cout << "list has been deleted\n";
+	}
+
+	void Append(double val)
+	{
+		if (length == 0)
+		{
+			list_node_t* pnew = new list_node_t;
+			head = pnew;
+			tail = pnew;
+			tail->value = val;
+			tail->next = nullptr;
+		}
+		else
+		{
+			list_node_t* pnew = new list_node_t;
+			tail->next = pnew;
+			tail = tail->next;
+			tail->value = val;
+			tail->next = nullptr;
+		}
+		++length;
+	}
+
+	void Insert(int pos, double val)
+	{
+		if (pos < 1)
+			return;
+		if (pos == length)
+			Append(val);
+		else
+		{
+			list_node_t* p = head;
+			for (int i = 1; i < pos; ++i)
+				p = p->next;
+			list_node_t* pnew = new list_node_t;
+			pnew->value = val;
+			pnew->next = p->next;
+			p->next = pnew;
+			++length;
+		}
+	}
+
+	double Find(int pos) const
+	{
+		if (pos < 1 || pos>length)
+		{
+			std::cout << "This element does not exist" << std::endl;
+			return 0;
+		}
+		list_node_t* p = head;
+		for (int i = 1; i < pos; ++i)
+		{
+			p = p->next;
+		}
+		return p->value;
+	}
+
+	void Print() const
+	{
+		list_node_t* p = head;
+		while (p)
+		{
+			std::cout << p->value << " ";
+			p = p->next;
+		}
+		std::cout << std::endl;
+	}
+};
+
+
+int main()
+{
+	list_t list;
+
+	for (int i = 0;i < 3;++i)
+	{
+		std::cout << "enter value that will be stored in a new record:";
+		double val2;
+		std::cin >> val2;
+		list.Append(val2);
+		list.Print();
+	}
+
+	std::cout << "enter number of record after which you want to add a new one:";
+	int pos;
+	std::cin >> pos;
+	std::cout << "enter value that will be stored in a new record:";
+	double val;
+	std::cin >> val;
+	list.Insert(pos, val);
+	list.Print();
+
+	std::cout << "enter number of record that you want to find:";
+	int n;
+	std::cin >> n;
+	val = list.Find(n);
+	std::cout << "value stored in that record: " << val << "\n";
+	list_t clist(5, 2);
+	std::cout << "the first list is:" << std::endl;
+	list.Print();
+	std::cout << "the second list is:" << std::endl;
+	clist.Print();
+
+	clist = list;
+	std::cout << "after op= the second list is:" << std::endl;
+	clist.Print();
+	return 0;
+}

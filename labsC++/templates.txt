@@ -1,0 +1,510 @@
+#include <iostream>
+#include <stdexcept>
+#include <cassert>
+#include <cmath>
+
+using namespace std;
+
+template<typename T1>
+class Iterator 
+{
+
+private:
+	T1* itdata;        //передвигается по массиву
+public:
+	Iterator() :itdata(nullptr) {}
+	Iterator(T1* data1) :Iterator() { itdata = data1; }
+
+	T1& operator*() 
+	{
+		return *itdata;
+	}
+
+	Iterator& operator++() 
+	{
+		++itdata;
+		return *this;
+	}
+
+	Iterator& operator--() 
+	{
+		--itdata;
+		return *this;
+	}
+	template <typename U>
+	bool operator != (const Iterator<U>& lv)
+	{
+		return itdata != lv.itdata;
+	}
+};
+
+template <typename T>
+class vector_t 
+{
+private:
+
+	T* data;
+	unsigned int length;
+
+public:
+	//def ctor
+	vector_t():length(0),data(nullptr){cout << "default ctor" << endl;}
+
+	//ctor num
+	vector_t(int count):vector_t() 
+	{
+		cout << "Ctor num" << endl;
+		length = count;
+		data = new T[length];
+		for (Iterator<T> i = begin(); i != end(); ++i)
+		{
+			*i = 0;
+		}
+	}
+
+	//ctor num (заполнение списка числами)
+	vector_t(int count, T value) :vector_t()
+	{
+		cout << "ctor num" << endl;
+		length = count;
+		data = new T[length];
+		for (Iterator<T> i = begin(); i != end(); ++i)
+		{
+			*i = value;
+		}
+	}
+
+	//конструктор копирования 
+	template<typename T1>
+	vector_t(const vector_t<T1>& from):vector_t() 
+	{
+		cout << "Copy" << endl;
+		length = from.size();
+		data = new T[length];
+		Iterator<T> cur = begin();
+		Iterator<T1> rcur = from.begin();
+		while (cur != end())
+		{
+			*cur = *rcur;
+			++cur;
+			++rcur;
+		}
+	}
+
+	//конструктор перемещения
+	vector_t(vector_t&& from) noexcept
+	{
+		cout << "move ctor" << endl;
+		length = from.length;
+		data = from.data;
+		from.length = 0;
+		from.data = nullptr;
+	}
+
+	//оператор = перемещение
+	auto& operator= (vector_t<T>&& from) noexcept
+	{
+		cout << "operator move= " << endl;
+		if (this == &from) {
+			return *this;
+			length = from.length;
+			data = from.data;
+			from.length = 0;
+			from.data = nullptr;
+		}
+		return *this;
+	}
+	template<typename U>
+	auto& operator=(const vector_t<U>& rvect)
+	{
+		T* tval = data;
+		data = new T[rvect.size()];
+		length = rvect.size();
+		Iterator<T> cur = begin();
+		Iterator<U> rcur = rvect.begin();
+		while (cur != end())
+		{
+			*cur = *rcur;
+			++cur;
+			++rcur;
+		}
+		return *this;
+	}
+	template<>
+	auto& operator=<T>(const vector_t<T>& rvect)
+	{
+		if (this == &rvect)
+			return *this;
+		T* tval = val;
+		data = new T[rvect.size()];
+		length = rvect.size();
+		Iterator<T> cur = begin(),
+			rcur = rvect.begin();
+		while (cur != end())
+		{
+			*cur = *rcur;
+			++cur;
+			++rcur;
+		}
+		return *this;
+	}
+	//оператор = копирования
+	vector_t& operator= (const vector_t& from) {
+		cout << "operator copy= " << endl;
+		if (this != &from) {
+			copy(from, *this);
+		}
+		return *this;
+	}
+
+	T& operator[] (int position)
+	{
+		return data[position];
+	}  
+
+	T operator[] (int position) const
+	{
+		return data[position];
+	} 
+
+	void print() const {
+		for (int i = 0; i < length; i++) {
+			cout << data[i] << ' ';
+		}
+		cout << ' ' << endl;
+	}
+	void init() { length = 0; data = nullptr; }
+	void clear() { delete[] data; length = 0; data = nullptr; }
+	void copy(const vector_t<T>& from, vector_t<T>& to) {
+		if (from.length != 0) {
+			to.clear();
+			to.data = new T[from.length];
+			to.length = from.length;
+			for (int i = 0; i < from.length; i++) {
+				to.data[i] = from.data[i];
+			}
+		}
+		else return;
+	}
+
+	T& at(int position) const {
+		if ((position >= length) || (position < 0))
+			throw std::out_of_range("not rigth length");
+		return data[position];
+	}
+
+	int size() const { return length; }
+
+	vector_t<T>& resize(int n_count, int value) {
+		vector_t<T> vector(n_count);
+		int g = 0;
+		int dif = n_count - length;
+		if (dif > 0) { dif = length; }
+		else dif = n_count;
+
+		for (int i = 0; i < dif; i++) {
+			vector[i] = data[i];
+			g++;
+		}
+		for (g; g < n_count; g++) {
+			vector[g] = value;
+		}
+		clear();
+		*this = (vector_t&&)vector;
+		return *this;
+	}
+	vector_t& resize(int n_count) {
+		vector_t vector(n_count);
+		int g = 0;
+		int dif = n_count - length;
+		if (dif > 0) { dif = length; }
+		else dif = n_count;
+
+		for (int i = 0; i < dif; i++) {
+			vector[i] = data[i];
+			g++;
+		}
+		for (g; g < n_count; g++) {
+			vector[g] = 0;
+		}
+		clear();
+		*this = (vector_t&&)vector;
+		return *this;
+	}
+
+	~vector_t() { cout << "dctor" << endl; clear(); }
+
+	auto begin() const
+	{ 
+		return Iterator<T>(data); 
+	}  
+	auto end() const
+	{ 
+		return Iterator<T>(data + length); 
+	}
+};
+
+
+template<typename T>
+struct linear_generator_t {
+public:
+	double step;
+	double begin;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	linear_generator_t(T value, T st):begin(value),step(st) {}
+	T operator()() {
+		begin = begin + step * i;
+		++i;
+		return begin;
+	}
+};
+
+template<typename T>
+struct power_generator_t {
+public:
+	T begin;
+	T power;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	power_generator_t(T value, T p):begin(value),power(p) {}
+	T operator()() {
+		T a = pow(begin, power + i);
+		++i;
+		return a;
+	}
+};
+template<typename T>
+struct random_generator_t {
+public:
+	T begin;
+	int i = 0;
+public:
+	//инициализация начальным значением и шагом
+	random_generator_t(T value):begin(value) {}
+	T operator()() {
+		begin = rand();
+		return begin;
+	}
+};
+
+//унарный +
+template<typename T>
+auto operator+ (const vector_t<T>& v1) {
+	vector_t v(v1);
+	return v;
+}
+//унарный -
+template<typename T>
+auto operator- (const vector_t<T>& v1) {
+	vector_t<T> v(v1);
+	for (int i = 0; i < v.size(); ++i) {
+		v[i] = (-1) * v[i];
+	}
+	return v;
+}
+template<typename T>
+void operator*(double x, const vector_t<T>& vector) {
+	vector_t<T> operator*(const vector_t<T> & vector, double x);
+}
+template<typename T>
+vector_t<T>& operator*(vector_t<T>& vector, double x) {
+	for (int i = 0; i < vector.size(); ++i) {
+		vector[i] *= x;
+	}
+	return vector;
+}
+
+//бинарный op+
+template<typename T1,typename T2>
+auto operator+ (const vector_t<T1>& v1, const vector_t<T2>& v2) {
+	assert(v1.size() == v2.size());
+	vector_t<decltype(T1() + T2())> nvect(v1.size());
+	Iterator<decltype(T1() + T2())> cur = nvect.begin();
+	Iterator<T1> lcur = v1.begin();
+	Iterator<T2> rcur = v2.begin();
+	vector_t sum(v1);
+	while (cur != nvect.end())
+	{
+		*cur = *lcur + *rcur;
+		++cur;
+		++lcur;
+		++rcur;
+	}
+	return nvect;
+}
+
+//бинарный op-
+template<typename T1, typename T2>
+auto& operator- (const vector_t<T1>& v1, const vector_t<T2>& v2) {
+	assert(v1.size() == v2.size());
+	vector_t minus(v1);
+	for (int i = 0; i < minus.size(); ++i) {
+		minus[i] = v1[i] - v2[i];
+	}
+	return minus;
+}
+template<typename T>
+vector_t<T>& operator+(vector_t<T>& v1,double x)
+{
+	for (int i = 0;i < v1.size();++ i)
+	{
+		v1[i] += x;
+	}
+	return v1;
+}
+//оптимизация сложения
+template<typename T>
+vector_t<T> operator+(const vector_t<T>& v1, vector_t<T>&& v2)
+{
+	assert(v1.size() == v2.size());
+	Iterator<T> cur = v2.begin(),
+		rcur = v1.begin();
+	while (cur != v2.end())
+	{
+		*cur += *rcur;
+		++cur;
+		++rcur;
+	}
+	return (vector_t<T>&&)v2;
+}
+template<typename T1, typename T2>
+void fill(T1 it_begin, T1 it_end, T2& generator)
+{
+	for (T1 cur = it_begin; cur != it_end; ++cur)
+		*cur = generator();
+}
+template<typename T1, typename T2>
+void fill(T1& contaner, T2& generator) {
+	fill(contaner.begin(), contaner.end(), generator);
+}
+template<typename T>
+std::ostream& operator<<(std::ostream& out, vector_t<T>& vect)
+{
+	for (Iterator<T> cur = vect.begin(); cur != vect.end(); ++cur)
+		out << *cur << " ";
+	return out;
+}
+
+
+//void fill(vector_t& v, double value, int step) {
+//	for (int i = 0; i < v.size(); ++i) {
+//		v[i] = value + step * i;
+//	}
+//}
+//
+//void fill(Iterator it_begin, Iterator it_end, double value, int step) {
+//	int i = 0; double val = 0;
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		val = value + step * i;
+//		++i;
+//		*it_begin = val;
+//	}
+//}
+//
+//void fill_step_linear(Iterator it_begin, Iterator it_end, linear_generator_t l) {
+//	int i = 0; double val = 0;
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		*it_begin = l();
+//	}
+//}
+//
+//void fill_step_power(Iterator it_begin, Iterator it_end, power_generator_t l) {
+//	int i = 0; double val = 0;
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		*it_begin = l();
+//	}
+//}
+//
+//void fill_step_power(Iterator it_begin, Iterator it_end, double value, int power) {
+//	double val; int p = power;
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		val = pow(value, p);
+//		++p;
+//		*it_begin = val;
+//	}
+//}
+//
+//void fill_random(Iterator it_begin, Iterator it_end) {
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		*it_begin = rand();
+//	}
+//}
+//
+//void fill_random(Iterator it_begin, Iterator it_end, random_generator_t l) {
+//	for (it_begin; it_begin != it_end; ++it_begin) {
+//		*it_begin = l();
+//	}
+//}
+
+int main() {
+	//vector_t v1(10);
+	//vector_t v2(8);
+
+
+	//linear_generator_t linear_generator(3, 4);
+	//fill_step_linear(v1.begin(), v1.end(), linear_generator);
+	//v1.print();
+
+	//fill_step_power(v2.begin(), v2.end(), 2, 0);
+	//v2.print();
+
+	//power_generator_t power_generator(2, 2);
+	//fill_step_power(v2.begin(), v2.end(), power_generator);
+	//v2.print();
+
+	//fill_random(v2.begin(), v2.end());
+	//v2.print();
+
+	//vector_t v3(10);
+	//random_generator_t random_generator(3);
+	//fill_random(v3.begin(), v3.end(), random_generator);
+	//v3.print();
+
+	//v3.resize(4, 3);
+	//v3.print();
+
+	//v3.resize(15);
+	//v3.print();
+
+	////v3.at(23);
+	//v3.at(2);
+
+	vector_t <double>v1(10);
+	vector_t <int>v2(8);
+
+	cout << "\n first fill function" << endl;
+	linear_generator_t<int> linear_generator(3, 4);
+	fill(v1, linear_generator);
+	v1.print();
+
+	power_generator_t<double> power_generator(2, 2);
+	fill(v2, power_generator);
+	v1.print();
+
+	random_generator_t<int> random_generator(3);
+	fill(v1, random_generator);
+	v1.print();
+
+	cout << "\n second fill function" << endl;
+	fill(v2.begin(), v2.end(), linear_generator);
+	v2.print();
+
+	fill(v2.begin(), v2.end(), power_generator);
+	v2.print();
+
+
+	fill(v2.begin(), v2.end(), random_generator);
+	v2.print();
+	cout << "//////////////////////////////////////////" << endl;
+	vector_t<double> v3(v2*2);
+	cout << v3 << endl;
+	v3 = v1 + 20;
+	cout << v3 << endl;
+	cout << "//////////////////////////////////////////////////" << endl;
+
+	
+	return 0;
+}
